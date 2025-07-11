@@ -43,6 +43,11 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        extraClaims.put("authorities", userDetails.getAuthorities()
+                .stream()
+                .map(auth -> auth.getAuthority()) // Lấy "ROLE_ADMIN", "ROLE_USER"
+                .toList()
+        );
         return buildToken(extraClaims, userDetails, jwtExpiration);
     }
 

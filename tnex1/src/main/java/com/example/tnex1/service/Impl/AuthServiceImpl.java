@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
-//import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -36,9 +34,13 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             return "Email đã được sử dụng.";
         }
-
-        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-            return "Tên đăng nhập đã tồn tại.";
+        Role role = Role.USER;
+        try {
+            if (dto.getRole() != null) {
+                role = Role.valueOf(dto.getRole().toUpperCase());
+            }
+        } catch (IllegalArgumentException e) {
+            return "Vai trò không hợp lệ. Chỉ được: USER, ADMIN.";
         }
 
         User user = User.builder()
@@ -48,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .enabled(false) // Chưa xác thực
                 .verificationCode(UUID.randomUUID().toString())
+                .role(role) // hoặc Role.USER tùy ý
                 .build();
 
         userRepository.save(user);
@@ -81,14 +84,8 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email hoặc mật khẩu không đúng.");
         }
 
-        // Tạo đối tượng UserDetails với email
-        UserDetails userDetails = User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .role(Role.ADMIN)
-                .build();
-
-        String token = jwtService.generateToken(userDetails);
+        // ✅ Tạo JWT từ entity User, không dùng UserDetails
+        String token = jwtService.generateToken(user);
         return new AuthResponse(token, "Bearer");
     }
 

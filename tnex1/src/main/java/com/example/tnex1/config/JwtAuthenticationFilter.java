@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -34,9 +33,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
+        System.out.println(">>> JWT Filter is working");
+
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println(">>> Missing or invalid Authorization header");
             filterChain.doFilter(request, response);
             return;
         }
@@ -45,29 +47,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String jwt = authHeader.substring(7);
             final String email = jwtService.extractEmail(jwt);
 
-            Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+            System.out.println(">>> Email in token: " + email);
 
-            if (email != null && currentAuth == null) {
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    System.out.println(">>> Token is valid. Setting authentication for: " + email);
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
                                     userDetails.getAuthorities()
                             );
-                    System.out.println("Authorities: " + userDetails.getAuthorities());
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    System.out.println(">>> Token is NOT valid for user: " + email);
                 }
             }
 
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
+            System.out.println(">>> Exception in JWT filter: " + e.getMessage());
             handlerExceptionResolver.resolveException(request, response, null, e);
         }
     }

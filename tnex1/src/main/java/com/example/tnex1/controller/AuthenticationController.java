@@ -30,7 +30,13 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginUserDto dto) {
         try {
+            System.out.println(">>> Login attempt:");
+            System.out.println(">>> Email: " + dto.getEmail());
+            System.out.println(">>> Raw password (user input): " + dto.getPassword());
+
             AuthResponse response = authService.login(dto);
+
+            System.out.println(">>> Token returned: " + response.getToken());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Đăng nhập thất bại: " + e.getMessage());

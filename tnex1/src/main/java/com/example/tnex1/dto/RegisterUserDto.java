@@ -1,5 +1,6 @@
 package com.example.tnex1.dto;
 
+import com.example.tnex1.Enum.Role;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,4 +11,5 @@ public class RegisterUserDto {
     String password;
     String name;
     String username;
+    String role;
 }
